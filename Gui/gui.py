@@ -2,10 +2,13 @@ import math
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QCoreApplication, QObject, QRunnable, QThread, QThreadPool, pyqtSignal, pyqtSlot 
-from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap
+from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap, QImage
 import sys
 import os
 from os.path import join, isfile
+
+import cv2 as cv
+import numpy
 
 class GuiRoot(QWidget):
     # Root of Gui
@@ -18,9 +21,10 @@ class GuiRoot(QWidget):
         self.open_image()
         self.process_image()
         self.save_image()
-        """ self.setFixedSize(960, 800) # due to unfix image size"""
+        self.setFixedSize(960, 560) # due to unfix image size
         self.center()
         self.setWindowTitle('HW1')
+        self.img = numpy.ndarray(())
         self.image_label = QLabel() # label for image display
         
         # control panel layout
@@ -42,6 +46,7 @@ class GuiRoot(QWidget):
         hbox.addWidget(self.image_label)
         self.setLayout(hbox)
         self.show()
+
     def open_image(self):
         # open image related gui
         self.open_image_btn = QPushButton("Open Image", self)
@@ -58,20 +63,36 @@ class GuiRoot(QWidget):
         self.Ori_btn = QPushButton("Original image", self)
 
     def save_image(self):
-        # save related gui
+        # save current image related gui
         self.save_btn = QPushButton("Save", self)
-
+        self.save_btn.clicked.connect(self.save)
 
     def open(self):
         # open image function
         datapath = os.path.realpath(os.path.join(os.getcwd(), "ImageData"))
-        print(datapath)
-        fname = QFileDialog.getOpenFileName(self, 'Open image', 
-        datapath, "Image files (*.jpg *.png *.tif *.bmp *.raw)")
-        imagePath = fname[0]
-        pixmap = QPixmap(imagePath)
-        self.image_label.setPixmap(QPixmap(pixmap))
-        self.resize(pixmap.width(), pixmap.height())
+        file_name = QFileDialog.getOpenFileName(self, 'Open image', 
+        datapath, "Image files(*.jpg *.png *.tif *.bmp *.raw)")
+        
+        self.img = cv.imread(file_name[0], -1)
+        # get the size and channel of image, then turn image of opencv into Qimage
+        if 'raw' in file_name[0]:
+            # imread function is not support raw file
+            self.img = numpy.fromfile(file_name[0], dtype=numpy.uint8)
+            self.img = self.img.reshape(512, 512)
+            self.img = numpy.stack((self.img,)*3, axis=-1)
+        height, width, channel = self.img.shape
+        bytesPerLine = channel*width
+
+        self.qImg = QImage(self.img.data, width, height, bytesPerLine,
+            QImage.Format_RGB888).rgbSwapped()
+
+        # show Qimage on label
+        self.image_label.setPixmap(QPixmap.fromImage(self.qImg))
+    def save(self):
+        # save current image function
+        file_name = QFileDialog.getSaveFileName(
+            self, 'Save Image', './save_img', 'Image files(*.png *.jpg *.tif *.raw *.bmp)')
+        cv.imwrite(file_name[0], self.img)
 
     def center(self):
         # Place window in the center
