@@ -1,3 +1,3 @@
 import numpy as np
-print(np.zeros((3, 4)))
-print(np.zeros((3,4,1)))
+a = np.zeros((3, 4))
+print(a, a-2.5)
