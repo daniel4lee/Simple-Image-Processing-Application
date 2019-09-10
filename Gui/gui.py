@@ -65,25 +65,24 @@ class GuiRoot(QWidget):
         layout.setSpacing(50)
         # process image related gui
         self.HE_btn = QPushButton("Histogram Equalization", self)
+        self.HE_btn.clicked.connect(self.histogram_equation_function)
+        layout.addWidget(self.HE_btn, 0, 0, 1, 2)
 
         self.Inver_btn = QPushButton("Image Inversion", self)
         self.Inver_btn.clicked.connect(self.inverse_function)
         layout.addWidget(self.Inver_btn, 1, 0, 1, 2)
 
         self.GC_btn = QPushButton("Gamma Correction", self)
+        self.GC_btn.clicked.connect(self.GC_function)
         self.GC_degree = QSpinBox()
         self.GC_degree.setValue(2)
         self.GC_degree.setRange(0,100)
+        layout.addWidget(self.GC_btn, 2, 0, 1, 1)
+        layout.addWidget(self.GC_degree, 2, 1, 1, 1)
 
         self.Ori_btn = QPushButton("Original image", self)
         self.Ori_btn.clicked.connect(self.origin_function)
-        layout.addWidget(self.Ori_btn, 3, 0, 1, 2)
-
-        layout.addWidget(self.HE_btn, 0, 0, 1, 2)
-        
-        layout.addWidget(self.GC_btn, 2, 0, 1, 1)
-        layout.addWidget(self.GC_degree, 2, 1, 1, 1)
-        
+        layout.addWidget(self.Ori_btn, 3, 0, 1, 2)        
 
         layout.setVerticalSpacing(0)
         layout.setHorizontalSpacing(0)
@@ -125,18 +124,55 @@ class GuiRoot(QWidget):
             self, 'Save Image', './save_img', 'Image files(*.png *.jpg *.tif *.raw *.bmp)')
         if file_name[0]:
             cv.imwrite(file_name[0], self.img)
+
     def inverse_function(self):
-        
+        # use 255(the largest value of color) to minus the current value
+        # by doing so, the image become negative
+ 
         self.img = 255 - self.img
         self.show_function(self.img)
+    
+    def histogram_equation_function(self):
+        def transform_function(cdf, height, width):
+            temp = numpy.zeros_like(self.img)
+            cdf_min = numpy.amin(cdf)
+            for i in range(height):
+                for j in range(width):
+                    temp[i, j] = round(255 * (cdf[self.img[i, j]] - cdf_min) 
+                    / (height * width -cdf_min), 0)
+            return temp
+        self.img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY) # turn to gray scale
+        height, width = self.img.shape
 
+        histogram = [0]*256 # create the histogram
+        for h in range(height):
+            for w in range(width):
+                histogram[self.img[h, w]] += 1
+    
+        cdf = [0]*256 # calculate cumulative distribution function
+        for i in range(len(histogram)):
+            cdf[i] = sum(histogram[:i+1])
+        cdf = numpy.array(cdf)
+        '''
+        transform = numpy.uint8(255 * cdf / height / width) #finding transfer function values
+        temp = numpy.zeros_like(self.img)
+        for h in range(height):
+            for w in range(width):
+                temp[h, w] = transform[self.img[h, w]]
+        '''
+        self.img = transform_function(cdf, height, width)
+        self.img = numpy.stack((self.img,)*3, axis=-1)
+        self.show_function(self.img)
+    def 
     def origin_function(self):
+        # return the original image 
         if not self.original_flag:
+            # haven't open any image file
             pass
-
         else:
             self.img = self.original_img
             self.show_function(self.img)
+
     def center(self):
         # Place window in the center
         qr = self.frameGeometry()
