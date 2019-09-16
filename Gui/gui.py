@@ -1,13 +1,16 @@
 import math
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QCoreApplication, QObject, QRunnable, QThread, QThreadPool, pyqtSignal, pyqtSlot 
 from PyQt5.QtGui import QIntValidator, QDoubleValidator, QPixmap, QImage
+
 import sys
 import os
 from os.path import join, isfile
 
 import cv2 as cv
+
 import numpy
 
 class GuiRoot(QWidget):
@@ -74,9 +77,10 @@ class GuiRoot(QWidget):
 
         self.GC_btn = QPushButton("Gamma Correction", self)
         self.GC_btn.clicked.connect(self.GC_function)
-        self.GC_degree = QSpinBox()
-        self.GC_degree.setValue(2)
-        self.GC_degree.setRange(0,100)
+        self.GC_degree = QDoubleSpinBox()
+        self.GC_degree.setDecimals(2)
+        self.GC_degree.setValue(0.22)
+        self.GC_degree.setRange(0,10)
         layout.addWidget(self.GC_btn, 2, 0, 1, 1)
         layout.addWidget(self.GC_degree, 2, 1, 1, 1)
 
@@ -128,42 +132,68 @@ class GuiRoot(QWidget):
     def inverse_function(self):
         # use 255(the largest value of color) to minus the current value
         # by doing so, the image become negative
- 
-        self.img = 255 - self.img
-        self.show_function(self.img)
+        if self.original_flag:
+            self.img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
+            self.img = 255 - self.img
+            self.img = numpy.stack((self.img,)*3, axis=-1)
+            self.show_function(self.img)
     
     def histogram_equation_function(self):
         def transform_function(cdf, height, width):
+            # wiki: https://tinyurl.com/yxjfwskj
             temp = numpy.zeros_like(self.img)
             cdf_min = numpy.amin(cdf)
+            table = [0]*256
+            for i in range(256):
+                    table[i] = round(255 * (cdf[i] - cdf_min) 
+                    / (height * width -cdf_min), 0)
+            
             for i in range(height):
                 for j in range(width):
-                    temp[i, j] = round(255 * (cdf[self.img[i, j]] - cdf_min) 
-                    / (height * width -cdf_min), 0)
-            return temp
-        self.img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY) # turn to gray scale
-        height, width = self.img.shape
+                    self.img[i, j] = table[self.img[i, j]]
+        if self.original_flag:
+            self.img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY) # turn to gray scale
+            height, width = self.img.shape
 
-        histogram = [0]*256 # create the histogram
-        for h in range(height):
-            for w in range(width):
-                histogram[self.img[h, w]] += 1
-    
-        cdf = [0]*256 # calculate cumulative distribution function
-        for i in range(len(histogram)):
-            cdf[i] = sum(histogram[:i+1])
-        cdf = numpy.array(cdf)
-        '''
-        transform = numpy.uint8(255 * cdf / height / width) #finding transfer function values
-        temp = numpy.zeros_like(self.img)
-        for h in range(height):
-            for w in range(width):
-                temp[h, w] = transform[self.img[h, w]]
-        '''
-        self.img = transform_function(cdf, height, width)
-        self.img = numpy.stack((self.img,)*3, axis=-1)
-        self.show_function(self.img)
-    def 
+            histogram = [0]*256 # create the histogram
+            for h in range(height):
+                for w in range(width):
+                    histogram[self.img[h, w]] += 1
+        
+            cdf = [0]*256 # calculate cumulative distribution function
+            for i in range(len(histogram)):
+                cdf[i] = sum(histogram[:i+1])
+            cdf = numpy.array(cdf)
+            '''
+            transform = numpy.uint8(255 * cdf / height / width) #finding transfer function values
+            temp = numpy.zeros_like(self.img)
+            for h in range(height):
+                for w in range(width):
+                    temp[h, w] = transform[self.img[h, w]]
+            '''
+            transform_function(cdf, height, width)
+            self.img = numpy.stack((self.img,)*3, axis=-1)
+            self.show_function(self.img)
+    def GC_function(self):
+        # Gamma correction function
+        if self.original_flag:
+            a = float(self.GC_degree.value()) # Gamma value
+            height, width, channel= self.img.shape 
+            table =  [ [0]*256 for i in range(3)] # table could accerlate the computation
+
+            for channel in range(3): 
+                max_value = numpy.amax(self.img[:, :, channel])
+                for index in range(256):
+                    table[channel][index] = numpy.power(index / max_value, a) * max_value
+                    # calculate correspounding value for the 0 ~ 255 shades
+
+            for channel in range(3):
+                for h in range(height):
+                    for w in range(width):
+                        self.img[h, w, channel] = table[channel][self.img[h, w, channel]]
+                        # mapping the image by gamma correction table
+            self.img = numpy.uint8(self.img)
+            self.show_function(self.img)
     def origin_function(self):
         # return the original image 
         if not self.original_flag:
