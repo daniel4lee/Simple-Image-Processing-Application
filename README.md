@@ -10,6 +10,7 @@ A practice of Nvlab summer school.
 
 * __Histogram Equalization__
   * __Overview__: This method is to improve the contrast of images by spreading the clustered intensities value over the whole range.
+  
     ![](https://i.imgur.com/FMpJXSm.png)
     * __Steps__:
         1. Create the histogram of grey scale value for source image.
