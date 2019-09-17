@@ -107,7 +107,7 @@ class GuiRoot(QWidget):
                 self.img = self.img.reshape(512, 512)
                 self.img = numpy.stack((self.img,)*3, axis=-1)
             
-            self.original_img = self.img
+            self.original_img = numpy.copy(self.img)
             self.original_flag = True
             self.show_function(self.img)
 
@@ -125,7 +125,7 @@ class GuiRoot(QWidget):
     def save_function(self):
         # save current image function
         file_name = QFileDialog.getSaveFileName(
-            self, 'Save Image', './save_img', 'Image files(*.png *.jpg *.tif *.raw *.bmp)')
+            self, 'Save Image', './save_img', 'Image files(*.jpg *.png* .tif *.raw *.bmp)')
         if file_name[0]:
             cv.imwrite(file_name[0], self.img)
 
@@ -200,7 +200,7 @@ class GuiRoot(QWidget):
             # haven't open any image file
             pass
         else:
-            self.img = self.original_img
+            self.img = numpy.copy(self.original_img)
             self.show_function(self.img)
 
     def center(self):

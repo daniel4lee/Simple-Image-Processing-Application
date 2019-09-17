@@ -12,9 +12,7 @@ A practice of Nvlab summer school.
 ![general histogram equalization formula](https://i.imgur.com/uAKEVap.png)
 where cdf-min is the minimum non-zero value, M × N gives the image's number of pixels, and L is the number of grey levels used (in this case 256).
 
-increases the global contrast of
-especially when the usable data of the image is represented by close contrast values.
-the intensities can be better distributed on the histogram
+
 * Gamma Correction
 * Image Inversion
 
@@ -56,4 +54,4 @@ The application could load image files with `*.png, *.tif, *.bmp, *jpg, and *.ra
 * [PyQt5](https://riverbankcomputing.com/software/pyqt/intro)
 
 ## Reference
-* [__Wiki__](https://en.wikipedia.org/wiki/Histogram_equalization)
+* [__Wiki Histogram equalization__](https://en.wikipedia.org/wiki/Histogram_equalization)
