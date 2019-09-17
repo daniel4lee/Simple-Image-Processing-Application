@@ -15,7 +15,8 @@ A practice of Nvlab summer school.
         1. Create the histogram of grey scale value for source image.
         2. Form the table of correspounding cumulative distribution function.
         3. Make transition by subtituting the original gray scale value into the *general histogram equalization formula* as below.
-    ![](https://i.imgur.com/uAKEVap.png)
+
+            ![](https://i.imgur.com/uAKEVap.png)
              > Note: cdf-min is the minimum non-zero value, M × N gives the image's number of pixels, and L is the number of grey levels used (in this case is 256).
     * __advantage__:
         1. Increases the global contrast of images (especially images have close contrast values).
